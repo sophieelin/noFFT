@@ -1,5 +1,6 @@
 import numpy as np
 from noFFT import resonate
+import time
 
 
 def log_frequencies(fmin=32.7, n_freqs=84, freqs_per_octave=12):
@@ -17,6 +18,7 @@ def alphas_heuristic(frequencies, sr, k = 1):
 # alphas: EMWA parameters for each resonator
 # hop_length: number of samples between ech output sample
 def resonate_wrapper(y, sr, frequencies, alphas, hop_length=1, output_type='powers'):
+	start_time = time.time()
 	float_y = np.array(y, dtype=np.float32)
 	float_fs = np.array(frequencies, dtype=np.float32)
 	float_as = np.array(alphas, dtype=np.float32)
@@ -24,23 +26,51 @@ def resonate_wrapper(y, sr, frequencies, alphas, hop_length=1, output_type='powe
 	# betas = alphas
 	float_Rsc = resonate(float_y, sr, float_fs, float_as, float_as, hop_length)
 
-	Rsc = np.array(float_Rsc, dtype=np.float64)
+	res_time =  time.time()
+	print(f"[resonate_wrapper] resonate: {res_time - start_time}")
+
+
+	Rsc = np.array(float_Rsc, dtype=np.float32)
 	nfreqs = frequencies.shape[0]
+	print(f"n_freqs: {nfreqs}")
+	rsc_time =  time.time()
+	print(f"[resonate_wrapper] rsc np array: {rsc_time - res_time}")
+
+
 	Rsc = Rsc.reshape((-1, (2 * nfreqs)))
+	reshape_time =  time.time()
+	print(f"[resonate_wrapper] reshape Rsc: {reshape_time - rsc_time}")
+
 	# compute complex values in the right shape
 	re = Rsc[...,:nfreqs]
 	im = Rsc[...,nfreqs:]
+	print(re.shape, im.shape)
+	cur_time =  time.time()
+	print(f"[resonate_wrapper] compute complex values: {cur_time - reshape_time}")
 
+	return re
+	
 	if output_type == 'powers':
 		# max powers is 0.25
-		return re * re + im * im
+		result =  re * re + im * im
+		end_time =  time.time()
+		print(f"[resonate_wrapper] end of func: {end_time - cur_time}")
+		return result 
 	if output_type == 'amplitudes':
 		# max amplitude is 0.5
-		return np.sqrt(re * re + im * im)
+		result = np.sqrt(re * re + im * im)
+		end_time =  time.time()
+		print(f"[resonate_wrapper] end of func: {end_time - cur_time}")
+		return result
 	
+
+	end_time =  time.time()
+	print(f"[resonate_wrapper] end of func: {end_time - cur_time}")
 	# default: return complex vector
 	Rcx = re + im * 1j
 	Rcx = Rcx
+
+
 	return Rcx
 
 # Compute a resonator bank outputs from a single frequency sinusoidal input signal (impulse)
