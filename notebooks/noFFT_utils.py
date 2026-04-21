@@ -48,7 +48,6 @@ def resonate_wrapper(y, sr, frequencies, alphas, hop_length=1, output_type='powe
 	cur_time =  time.time()
 	print(f"[resonate_wrapper] compute complex values: {cur_time - reshape_time}")
 
-	return re
 	
 	if output_type == 'powers':
 		# max powers is 0.25
